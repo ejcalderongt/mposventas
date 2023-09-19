@@ -10,4 +10,3 @@ public interface ApiService {
     @POST("save_gps_coordinates") // Replace with your actual API endpoint
     Call<Void> postLocation(@Body GpsCoordinate gpsCoordinate);
 }
-

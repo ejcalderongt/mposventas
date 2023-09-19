@@ -25,19 +25,20 @@ public class GPSService extends Service {
     private LocationListener locationListener;
     private ApiService apiService;
     private appGlobals gl= new appGlobals();
-    private static final String API_BASE_URL = "http://192.168.0.8:8084";
-
+    private Location lastSavedLocation;
+    private long lastSaveTimestamp = 0; // Initialize with 0
     @Override
     public void onCreate() {
         super.onCreate();
 
         // Initialize Retrofit
         Retrofit retrofit = new Retrofit.Builder()
-                .baseUrl(API_BASE_URL)
+                .baseUrl(gl.BASE_URL)
                 .addConverterFactory(GsonConverterFactory.create())
                 .build();
 
         apiService = retrofit.create(ApiService.class);
+
     }
 
     @SuppressLint("MissingPermission")
@@ -45,12 +46,27 @@ public class GPSService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         // Start listening to GPS updates
         locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
-
         locationListener = new LocationListener() {
             @Override
             public void onLocationChanged(Location location) {
-                // Handle new location data
-                postLocationData(location.getLatitude(), location.getLongitude());
+
+                long currentTimestamp = System.currentTimeMillis();
+
+                // Save the location because the distance change is more than 10 meters
+                if (lastSavedLocation == null || location.distanceTo(lastSavedLocation) >= 10) {
+                    // Check if more than 5 minutes (300,000 milliseconds) have passed
+                    if((currentTimestamp - lastSaveTimestamp >= 300000) || (lastSaveTimestamp == 0)) {
+                        // Save the location because more than 5 minutes have passed
+                        GpsCoordinate gpsCoordinate= new GpsCoordinate();
+                        gpsCoordinate.setDispositivo("");
+                        gpsCoordinate.setLatitude(location.getLatitude());
+                        gpsCoordinate.setLongitude(location.getLatitude());
+                        gpsCoordinate.setIdusuario(gl.IdUsuario);
+                        postLocationData(gpsCoordinate);
+                        // Update the timestamp
+                        lastSaveTimestamp = currentTimestamp;
+                    }
+                }
             }
 
             @Override
@@ -87,11 +103,8 @@ public class GPSService extends Service {
         }
     }
 
-    private void postLocationData(double latitude, double longitude) {
+    private void postLocationData(GpsCoordinate gpsCoordinate) {
 
-        GpsCoordinate gpsCoordinate = new GpsCoordinate();
-        gpsCoordinate.setLatitude(latitude);
-        gpsCoordinate.setLongitude(longitude);
         // Create a POST request to your API with latitude and longitude
         Call<Void> call = apiService.postLocation(gpsCoordinate);
         call.enqueue(new Callback<Void>() {
