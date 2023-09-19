@@ -10,6 +10,9 @@ import android.os.Bundle;
 import android.os.IBinder;
 import androidx.annotation.Nullable;
 import android.util.Log;
+
+import com.mpos.mposventas.base.appGlobals;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -21,7 +24,8 @@ public class GPSService extends Service {
     private LocationManager locationManager;
     private LocationListener locationListener;
     private ApiService apiService;
-    private static final String API_BASE_URL = "YOUR_API_BASE_URL";
+    private appGlobals gl= new appGlobals();
+    private static final String API_BASE_URL = "http://192.168.0.8:8084";
 
     @Override
     public void onCreate() {
